@@ -20,8 +20,6 @@ class NetworkModel(torch.nn.Module):
         self.fc1 = nn.Linear(128, 256)
         self.fc2 = nn.Linear(256, dataset.num_classes)
 
-
-
     def forward(self, x, edge_index, batch):
         x = f.elu(self.fc0(x))
         x = f.elu(self.conv1(x, edge_index))

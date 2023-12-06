@@ -349,6 +349,4 @@ class VerticalCircularEndBlindSlot:
         _vertical_circular_end_blind_slot = mdc.extrusion(self.dept[self.dir],
                                                           mdc.flatsurface(_vertical_circular_end_blind_slot_primitive))
 
-        # mdc.show([_vertical_circular_end_blind_slot])
-
         return _vertical_circular_end_blind_slot

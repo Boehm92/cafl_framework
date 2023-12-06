@@ -12,9 +12,9 @@ STUDY_NAME = "CAFL_Experiment"
 torch.manual_seed(1)
 device = "cuda" if torch.cuda.is_available() else "cpu"
 print(device)
-data_partition = 180
+data_partition = 12000
 
-test_dataset = DataImporter(os.getenv('TEST_DATASET_SOURCE'), os.getenv('TEST_DATASET_DESTINATION'))
+# test_dataset = DataImporter(os.getenv('TEST_DATASET_SOURCE'), os.getenv('TEST_DATASET_DESTINATION'))
 training_dataset = DataImporter(
     os.getenv('TRAINING_DATASET_SOURCE'), os.getenv('TRAINING_DATASET_DESTINATION')).shuffle()
 
@@ -33,11 +33,11 @@ def objective(trial):
     print("dropout_probability: ", dropout_probability)
 
     training_dataset.shuffle()
-    test_dataset.shuffle()
+    # test_dataset.shuffle()
 
     train_loader = DataLoader(training_dataset[:data_partition], batch_size=b_size, shuffle=True, drop_last=True)
     val_loader = DataLoader(training_dataset[data_partition:], batch_size=b_size, shuffle=True, drop_last=True)
-    test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, drop_last=True)
+    # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, drop_last=True)
 
     model = NetworkModel(dataset=training_dataset, device=device, batch_size=b_size,
                       dropout_probability=dropout_probability, number_conv_layers=number_conv_layers,

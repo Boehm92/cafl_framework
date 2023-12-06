@@ -64,7 +64,7 @@ class DataImporter(InMemoryDataset):
                         file_name = str(file).replace('.csv', '.stl')
                         self.data_list.append(create_graph(root + '/' + file_name, file_labels))
                         print(file_name)
-
+        print(self.collate(self.data_list), self.processed_paths[0])
         torch.save(self.collate(self.data_list), self.processed_paths[0])
 
     def __repr__(self) -> str:

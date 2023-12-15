@@ -22,12 +22,12 @@ _parser.add_argument('--cad_data_generation_start_cycle',
                           'overwritten')
 
 _parser.add_argument('--cad_data_generation_end_cycles',
-                     dest='cad_data_generation_end_cycles', type=int, default=13000,
+                     dest='cad_data_generation_end_cycles', type=int, default=101,
                      help='This value defines how many cad models with multiple machining feature are '
                           'created.')
 
 _parser.add_argument('--max_machining_feature_count',
-                     dest='max_machining_feature_count', type=int, default=6,
+                     dest='max_machining_feature_count', type=int, default=2,
                      help='This value defines how many machining feature maximal can be applied to the base'
                           'primitive. The actual value will be randomly chosen from an interval from 1 to'
                           'the here defined value. For single feature creation this value should be 2, because the '
@@ -53,7 +53,10 @@ _parser.add_argument('--machining_feature_id',
                           'primitive. Can only be used if "select_machining_feature_id_random" is false.'
                           'Should be true for single machining feature creation.')
 
+
+
 if __name__ == '__main__':
     _config = _parser.parse_args()
     _data_generator = DataGenerator(_config)
     _data_generator.generate()
+

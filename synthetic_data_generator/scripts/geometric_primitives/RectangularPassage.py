@@ -5,7 +5,7 @@ import madcad as mdc
 class RectangularPassage:
     def __init__(self, limit):
         self.dir = np.random.choice(["direction_1", "direction_2", "direction_3", "direction_4", "direction_5",
-                                    "direction_6"])
+                                     "direction_6"])
         self.limit = limit
         self.pos_x = np.random.uniform(0.5, 8.5)
         self.pos_y = np.random.uniform(0.5, 8.5)

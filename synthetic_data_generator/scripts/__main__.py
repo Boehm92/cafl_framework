@@ -22,12 +22,12 @@ _parser.add_argument('--cad_data_generation_start_cycle',
                           'overwritten')
 
 _parser.add_argument('--cad_data_generation_end_cycles',
-                     dest='cad_data_generation_end_cycles', type=int, default=101,
+                     dest='cad_data_generation_end_cycles', type=int, default=144001,
                      help='This value defines how many cad models with multiple machining feature are '
                           'created.')
 
 _parser.add_argument('--max_machining_feature_count',
-                     dest='max_machining_feature_count', type=int, default=2,
+                     dest='max_machining_feature_count', type=int, default=9,
                      help='This value defines how many machining feature maximal can be applied to the base'
                           'primitive. The actual value will be randomly chosen from an interval from 1 to'
                           'the here defined value. For single feature creation this value should be 2, because the '
@@ -48,7 +48,7 @@ _parser.add_argument('--select_machining_feature_id_random',
                           'be true for single machining feature creation.')
 
 _parser.add_argument('--machining_feature_id',
-                     dest='machining_feature_id', type=int, default=0,
+                     dest='machining_feature_id', type=int, default=1,
                      help='This value selects a specific machining feature for the application to the base'
                           'primitive. Can only be used if "select_machining_feature_id_random" is false.'
                           'Should be true for single machining feature creation.')

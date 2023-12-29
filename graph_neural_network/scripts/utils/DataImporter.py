@@ -1,7 +1,7 @@
 import os
 import torch
 from torch_geometric.data import InMemoryDataset
-from CadGraphConverter import create as create_graph
+from graph_neural_network.scripts.utils.CadGraphConverter import create as create_graph
 
 
 class DataImporter(InMemoryDataset):
@@ -50,20 +50,18 @@ class DataImporter(InMemoryDataset):
         path = self.raw_data_root
         print(self.raw_data_root)
         for root, dirs, files in os.walk(self.raw_data_root):
-
             for file in files:
-
                 file_labels = []
 
-                if file.lower().endswith('.csv'):
+                if file.lower().endswith('_vertices_label.csv'):
                     with open(f'{root}/{file}', 'r', encoding='utf-8') as f:
 
                         for line in f.readlines():
                             file_labels.append(int(line.split(",")[-1]))
 
-                        file_name = str(file).replace('.csv', '.stl')
-                        self.data_list.append(create_graph(root + '/' + file_name, file_labels))
+                        file_name = str(file).replace('_vertices_label.csv', '.stl')
                         print(file_name)
+                        self.data_list.append(create_graph(root + '/' + file_name, file_labels))
         print(self.collate(self.data_list), self.processed_paths[0])
         torch.save(self.collate(self.data_list), self.processed_paths[0])
 

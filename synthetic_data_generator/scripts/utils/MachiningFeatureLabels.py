@@ -16,12 +16,13 @@ class MachiningFeatureLabels:
     def truncate_coordinates(vertices):
         return [float(f"{c:.3f}") for c in vertices]
 
-    def write_csv_file(self, label_list):
+    def write_csv_file(self, label_list, label_type):
         _label_list = pd.DataFrame(label_list)
         _label_list.to_csv(
-            os.getenv(self.target_directory) + "/" + str(self.model_id) + ".csv", header=False, index=False)
+            os.getenv(self.target_directory) + "/" + str(self.model_id) + "_" + label_type + ".csv", header=False,
+            index=False)
 
-    def write_localization_training_file(self):
+    def write_vertices_file(self):
         # get vertices for new cad model and machining features
         _new_cad_model = mesh.Mesh.from_file(os.getenv(self.target_directory) + "/" + str(self.model_id) + ".stl")
         _new_cad_model_vertices = np.array(np.unique(
@@ -45,9 +46,9 @@ class MachiningFeatureLabels:
                     if cad_model_vertices == machining_feature_vertices:
                         _label_list[vertices_index] = self.machining_feature_id_list[machining_feature_id]
 
-        self.write_csv_file(_label_list)
+        self.write_csv_file(_label_list, "vertices_label")
 
-    def write_ssd_net_training_file(self):
+    def write_bounding_box_file(self):
         _label_list = []
         _new_cad_model = mesh.Mesh.from_file(os.getenv(self.target_directory) + "/" + str(self.model_id) + ".stl")
         _new_cad_model_vertices = np.array(np.unique(
@@ -70,4 +71,4 @@ class MachiningFeatureLabels:
                      max(x_values), max(y_values), max(z_values),
                      self.machining_feature_id_list[machining_feature_id]])
 
-        self.write_csv_file(_label_list)
+        self.write_csv_file(_label_list, "bounding_box_label")

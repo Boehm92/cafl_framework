@@ -1,7 +1,7 @@
 import os
 import numpy as np
-import pandas as pd
 import madcad as mdc
+from synthetic_data_generator.scripts.utils.BinvoxConverter import BinvoxConverter
 from synthetic_data_generator.scripts.geometric_primitives.base_primitive import Cube
 from synthetic_data_generator.scripts.utils.MachiningFeature import MachiningFeature
 from synthetic_data_generator.scripts.utils.CsgOperation import CsgOperation
@@ -26,7 +26,7 @@ class DataGenerator:
 
             _new_cad_model = Cube(10, mdc.vec3(5, 5, 5)).transform()
 
-            _machining_feature_count = 2 # np.random.randint(1, self.max_machining_feature_count)
+            _machining_feature_count = np.random.randint(1, self.max_machining_feature_count)
 
             try:
                 for _ in range(_machining_feature_count):
@@ -61,10 +61,14 @@ class DataGenerator:
             # specific naming convention for .stl files.
 
             mdc.write(_new_cad_model, os.getenv(self.target_directory) + "/" + str(_model_id) + ".stl")
-            # MachiningFeatureLabels(_machining_feature_list, _model_id, self.target_directory,
-            #                        _machining_feature_id_list).write_localization_training_file()
             MachiningFeatureLabels(_machining_feature_list, _model_id, self.target_directory,
-                                   _machining_feature_id_list).write_ssd_net_training_file()
+                                   _machining_feature_id_list).write_vertices_file()
+            MachiningFeatureLabels(_machining_feature_list, _model_id, self.target_directory,
+                                   _machining_feature_id_list).write_bounding_box_file()
 
             del _new_cad_model
             del _machining_feature_id_list
+
+        BinvoxConverter(self.target_directory).create_file()
+
+

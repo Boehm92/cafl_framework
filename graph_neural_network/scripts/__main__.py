@@ -1,99 +1,64 @@
 import os
-import time
-import torch
-import wandb
 import optuna
-from DataImporter import DataImporter
-from torch_geometric.loader import DataLoader
-from NetworkModel import NetworkModel
-import torch.optim.lr_scheduler
+import argparse
+import torch
+from graph_neural_network.scripts.utils.DataImporter import DataImporter
+from graph_neural_network.scripts.MachiningFeatureLocalizer import MachiningFeatureLocalizer
 
-STUDY_NAME = "CAFL_Experiment"
-torch.manual_seed(1)
-device = "cuda" if torch.cuda.is_available() else "cpu"
-print(device)
-data_partition = 12000
+from graph_neural_network.scripts.network_models.GcNetwork import GcNetwork
+from graph_neural_network.scripts.network_models.DgcnNetwork import DgcnNetwork
 
-# test_dataset = DataImporter(os.getenv('TEST_DATASET_SOURCE'), os.getenv('TEST_DATASET_DESTINATION'))
-training_dataset = DataImporter(
-    os.getenv('TRAINING_DATASET_SOURCE'), os.getenv('TRAINING_DATASET_DESTINATION')).shuffle()
-
-def objective(trial):
-    # Hyperparameter
-    best_accuracy = 0
-    max_epoch = 100
-    number_conv_layers = 2  # trial.suggest_int("number_conv_layers", 2, 7)
-    h_channel = 8  # trial.suggest_categorical("h_channel", [32, 64, 128, 256, 512])
-    b_size = 16  # trial.suggest_categorical("b_size", [32, 64, 128, 256])
-    lr = 0.001  # trial.suggest_categorical("lr", [0.01, 0.001, 0.0001])
-    dropout_probability = 0.2  # trial.suggest_float("dropout_probability", 0.1, 0.5, step=0.1)
-
-    print("b_size: ", b_size)
-    print("lr: ", lr)
-    print("dropout_probability: ", dropout_probability)
-
-    training_dataset.shuffle()
-    # test_dataset.shuffle()
-
-    train_loader = DataLoader(training_dataset[:data_partition], batch_size=b_size, shuffle=True, drop_last=True)
-    val_loader = DataLoader(training_dataset[data_partition:], batch_size=b_size, shuffle=True, drop_last=True)
-    # test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False, drop_last=True)
-
-    model = NetworkModel(dataset=training_dataset, device=device, batch_size=b_size,
-                      dropout_probability=dropout_probability, number_conv_layers=number_conv_layers,
-                      hidden_channels=h_channel).to(device)
-
-    # model.load_state_dict(torch.load(os.getenv('WEIGHTS') + '/weights.pt'))
-    print(model)
-
-    criterion = torch.nn.CrossEntropyLoss()
-    optimizer = torch.optim.Adam(model.parameters(), lr=lr)
-    # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, mode='max', factor=0.1, patience=15, verbose=True)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=30, gamma=0.1, verbose=True)
-
-    config = dict(trial.params)
-    config["trial.number"] = trial.number
-    wandb.init(project="CAFL_Experiment_1",
-               entity="boehm92", config=config, group=STUDY_NAME, reinit=True)
-
-    for epoch in range(1, max_epoch):
-        training_loss = model.train_loss(train_loader, criterion, optimizer)
-        val_loss = model.val_loss(val_loader, criterion)
-        train_f1 = model.accuracy(train_loader)
-        val_f1 = model.accuracy(val_loader)
-        test_f1 = 0 # model.accuracy(test_loader)
-        trial.report(val_f1, epoch) # test
-        # scheduler.step() # test
-
-        wandb.log({'training_loss': training_loss, 'val_los': val_loss, 'train_F1': train_f1, 'val_F1': val_f1,
-                  'test_F1': test_f1})  #
-
-        if best_accuracy < val_f1:
-            torch.save(model.state_dict(), os.getenv('WEIGHTS') + '/weights.pt')
-            best_accuracy = val_f1
-            print("Saved model due to better found accuracy")
-
-        if trial.should_prune():
-            wandb.run.summary["state"] = "pruned"
-            wandb.finish(quiet=True)
-            raise optuna.exceptions.TrialPruned()
-
-        print(f'Epoch: {epoch:03d}, training_loss: {training_loss:.4f}, val_los: {val_loss:.4f},'
-              f'train_F1: {train_f1:.4f}, val_F1: {val_f1:.4f}') # test_F1: {test_f1:.4f}
-
-    wandb.run.summary["Final F-Score"] = val_f1
-    wandb.run.summary["state"] = "completed"
-    wandb.finish(quiet=True)
-
-    return val_f1
+_parser = argparse.ArgumentParser(description='Base configuration of the synthetic data generator')
+_parser.add_argument('--training_dataset',
+                     dest='training_dataset', default=DataImporter(os.getenv('TRAINING_DATASET_SOURCE'),
+                                                                   os.getenv('TRAINING_DATASET_DESTINATION')).shuffle(),
+                     help='The training_dataset config holds the training data. The data is converted via the'
+                          'DataImporter class into a fitting graph representation and then loaded for training. The'
+                          'conversion process takes some time, especially for larger data, but it has to be done only'
+                          'once, as long as the data doesnt change. '
+                          '(Not used for testing)')
+_parser.add_argument('--train_val_partition',
+                     dest='train_val_partition', default=22000, type=int,
+                     help='This variable allows you to separate the training data, taken from the "data -> cad ->'
+                          'training" folder, into training and validation datasets. For example, if you have 24000 '
+                          'cad models, if you type in value 22000 models, then 22000 models will be utilized for '
+                          'training and 2000 models for validation. NOTE: The cad models will be first converted into a'
+                          'fitting graph representation and saved into the data -> graph -> training folder.'
+                          '(Not used for testing)')
+_parser.add_argument('--device',
+                     dest='device', default=("cuda" if torch.cuda.is_available() else "cpu"), type=str,
+                     help='The device variable defines if the code is run on the gpu or the cpu. If you installed the'
+                          'cuda toolkit and the related pytorch and pytorch-geometric packages, then the code should '
+                          'run on the gpu. If not, the code automatically will run on the cpu, which will be far '
+                          'slower. Please note, that in the requirements1 and 2 files, there are example of '
+                          'installations setting, however the necessary python packages vary strongly in regard to'
+                          'used operation system, python interpreter, used graphic card and installed cuda toolkit.'
+                          'So, it may take some time to find the right setting for you. We suggest, for the first '
+                          'implementation, to install the packages manually.')
+_parser.add_argument('--network_model', dest='network_model', default=DgcnNetwork, help='GcNetwork, DgcnNetwork')
+_parser.add_argument('--network_model_id', dest='network_model_id', default='GcNetwork', type=str)
+_parser.add_argument('--max_epoch',
+                     dest='max_epoch', default=100, type=int,
+                     help='The max epoch defines how often the complete training data is run trough. One epoch means'
+                          'therefore, that the graph neural network is fitted ones an all available training data. '
+                          'More epochs generally decreases the network loss, but can also lead to overfitting,'
+                          'memorizing the training data and not be applicable to new data. We utilized 100 epochs for'
+                          'most of our experiments')
+_parser.add_argument('--project_name',
+                     dest='project_name', default='testi', type=str,
+                     help='This name belongs to the wandb project which is created when the code is started. The wandb '
+                          'code publishes training parameters like train_accuracy to your personal wandb dashboard. You'
+                          'just have to register at www.wandb.ai and follow the instructions at: '
+                          'https://docs.wandb.ai/quickstart.'
+                          '(Not used for testing)')
+_parser.add_argument('--study_name',
+                     dest='study_name', default='test_1', type=str,
+                     help='The study name defines a subgroup for the wandb project, which is defined above. This helps'
+                          'to repeat an experiment or training process without creating every time a new wandb project.'
+                          '(Not used for testing)')
 
 if __name__ == '__main__':
-    study = optuna.create_study(direction="maximize", study_name=STUDY_NAME)
+    _config = _parser.parse_args()
 
-    start_time = time.time()
-    study.optimize(objective, n_trials=1)
-    end_time = time.time()
-
-    print("Time: ", end_time - start_time)
-
-
+    _study = optuna.create_study(direction="maximize", study_name="testi")
+    _study.optimize(lambda trial: MachiningFeatureLocalizer(_config, trial).training(), n_trials=1)

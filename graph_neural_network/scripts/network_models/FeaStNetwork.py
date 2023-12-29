@@ -4,7 +4,7 @@ from torch_geometric.nn import FeaStConv as GraphConvLayer
 import torch.nn as nn
 
 
-class NetworkModel(torch.nn.Module):
+class FeaStNetwork(torch.nn.Module):
     def __init__(self, dataset, device, batch_size, dropout_probability, number_conv_layers, hidden_channels):
         super().__init__()
         self.device = device

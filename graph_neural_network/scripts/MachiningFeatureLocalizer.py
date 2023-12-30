@@ -25,7 +25,7 @@ class MachiningFeatureLocalizer:
         self.training_dataset.shuffle()
         _train_loader = DataLoader(self.training_dataset[:self.train_val_partition],
                                    batch_size=self.hyper_parameters.batch_size, shuffle=True, drop_last=True)
-        _val_loader = DataLoader(self.training_dataset[self.train_val_partition: self.train_val_partition + 2000],
+        _val_loader = DataLoader(self.training_dataset[self.train_val_partition: self.train_val_partition + 1000],
                                  batch_size=self.hyper_parameters.batch_size, shuffle=True, drop_last=True)
 
         _network_model = self.network_model(self.training_dataset, self.device, self.hyper_parameters).to(self.device)

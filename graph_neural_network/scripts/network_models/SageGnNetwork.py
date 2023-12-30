@@ -1,26 +1,50 @@
 import torch
 import torch.nn.functional as f
 from torch_geometric.nn import SAGEConv
-from torch.nn import Linear
+from sklearn.metrics import f1_score
 
 
 class SageGnNetwork(torch.nn.Module):
-    def __init__(self, dataset, device, batch_size, dropout_probability, number_conv_layers, hidden_channels):
+    def __init__(self, dataset, device, hyper_parameter):
         super().__init__()
+        self.dataset = dataset
         self.device = device
-        self.batch_size = batch_size
-        self.dropout_probability = dropout_probability
-        self.number_conv_layers = number_conv_layers
-        self.conv_layers = []
+        self.batch_size = hyper_parameter.batch_size
+        self.dropout_probability = hyper_parameter.dropout_probability
+        self.number_conv_layers = hyper_parameter.number_conv_layers
+        self.hidden_channels = hyper_parameter.hidden_channels
+        self.aggr = hyper_parameter.aggr
 
-        self.conv1 = SAGEConv(dataset.num_features, 256)
-        self.conv2 = SAGEConv(256, 256)
-        self.conv3 = SAGEConv(256, dataset.num_classes)
+        self.conv1 = SAGEConv(dataset.num_features, self.hidden_channels, self.aggr)
+        if self.number_conv_layers > 1:
+            self.conv2 = SAGEConv(self.hidden_channels, self.hidden_channels, self.aggr)
+        if self.number_conv_layers > 2:
+            self.conv3 = SAGEConv(self.hidden_channels, self.hidden_channels, self.aggr)
+        if self.number_conv_layers > 3:
+            self.conv4 = SAGEConv(self.hidden_channels, self.hidden_channels, self.aggr)
+        if self.number_conv_layers > 4:
+            self.conv5 = SAGEConv(self.hidden_channels, dataset.num_classes, self.aggr)
 
     def forward(self, x, edge_index, batch):
-        x = f.elu(self.conv1(x, edge_index))
-        x = f.elu(self.conv2(x, edge_index))
-        x = f.elu(self.conv3(x, edge_index))
+        x = self.conv1(x, edge_index)
+        x = x.relu()
+        x = f.dropout(x, p=self.dropout_probability, training=self.training)
+        if self.number_conv_layers > 1:
+            x = self.conv2(x, edge_index)
+            x = x.relu()
+            x = f.dropout(x, p=self.dropout_probability, training=self.training)
+        if self.number_conv_layers > 2:
+            x = self.conv3(x, edge_index)
+            x = x.relu()
+            x = f.dropout(x, p=self.dropout_probability, training=self.training)
+        if self.number_conv_layers > 3:
+            x = self.conv4(x, edge_index)
+            x = x.relu()
+            x = f.dropout(x, p=self.dropout_probability, training=self.training)
+        if self.number_conv_layers > 4:
+            x = self.conv5(x, edge_index)
+            x = x.relu()
+            x = f.dropout(x, p=self.dropout_probability, training=self.training)
 
         return f.log_softmax(x, dim=1)
 
@@ -54,15 +78,17 @@ class SageGnNetwork(torch.nn.Module):
     @torch.no_grad()
     def accuracy(self, loader):
         self.eval()
-        correct_predictions, total_predictions = 0, 0
+        all_predicted_labels = []
+        all_true_labels = []
 
         for data in loader:
-            out = self(data.x.to(self.device), data.edge_index.to(self.device), data.batch.to(self.device))
-            predicted_labels = out.argmax(dim=1).cpu()
-            true_labels = data.y.cpu()
-            correct_predictions += (predicted_labels == true_labels).sum().item()
-            total_predictions += len(true_labels)
+            out = self(data.x.to(self.device), data.edge_index.to(self.device))
+            predicted_labels = out.argmax(dim=1).cpu().numpy()
+            true_labels = data.y.cpu().numpy()
 
-        accuracy = correct_predictions / total_predictions if total_predictions > 0 else 0.0
+            all_predicted_labels.extend(predicted_labels)
+            all_true_labels.extend(true_labels)
 
-        return 100 * accuracy
+        f1 = f1_score(all_true_labels, all_predicted_labels, average='micro')
+
+        return f1

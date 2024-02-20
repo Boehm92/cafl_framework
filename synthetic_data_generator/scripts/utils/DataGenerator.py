@@ -26,7 +26,7 @@ class DataGenerator:
 
             _new_cad_model = Cube(10, mdc.vec3(5, 5, 5)).transform()
 
-            _machining_feature_count = np.random.randint(1, self.max_machining_feature_count)
+            _machining_feature_count = np.random.randint(1, (self.max_machining_feature_count + 1))
 
             try:
                 for _ in range(_machining_feature_count):

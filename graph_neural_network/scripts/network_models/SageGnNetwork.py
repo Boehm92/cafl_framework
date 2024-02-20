@@ -25,7 +25,7 @@ class SageGnNetwork(torch.nn.Module):
         if self.number_conv_layers > 4:
             self.conv5 = SAGEConv(self.hidden_channels, dataset.num_classes, self.aggr)
 
-    def forward(self, x, edge_index, batch):
+    def forward(self, x, edge_index):
         x = self.conv1(x, edge_index)
         x = x.relu()
         x = f.dropout(x, p=self.dropout_probability, training=self.training)
@@ -55,7 +55,7 @@ class SageGnNetwork(torch.nn.Module):
         for i, data in enumerate(loader):  # Iterate in batches over the training dataset.
             data = data.to(self.device)
             optimizer.zero_grad()  # Clear gradients.
-            out = self(data.x, data.edge_index, data.batch)  # Perform a single forward pass.
+            out = self(data.x, data.edge_index)  # Perform a single forward pass.
             loss = criterion(out, data.y)
             total_loss += loss.item() * data.num_graphs
             loss.backward()  # Derive gradients.
@@ -69,7 +69,7 @@ class SageGnNetwork(torch.nn.Module):
         total_loss = 0
         for data in loader:  # Iterate in batches over the training dataset.
             data = data.to(self.device)
-            out = self(data.x, data.edge_index, data.batch)  # Perform a single forward pass.
+            out = self(data.x, data.edge_index)  # Perform a single forward pass.
             loss = criterion(out, data.y)
             total_loss += loss.item() * data.num_graphs
 

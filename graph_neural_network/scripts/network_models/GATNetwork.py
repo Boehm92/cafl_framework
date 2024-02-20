@@ -20,22 +20,24 @@ class GATNetwork(torch.nn.Module):
 
         if self.number_conv_layers == 2:
             self.conv2 = GATConv(self.conv_hidden_channels * self.attention_heads, self.dataset.num_classes,
-                                 dropout=self.dropout_probability)
-        elif self.number_conv_layers > 2:
+                                 concat=False)
+        if self.number_conv_layers == 3:
             self.conv2 = GATConv(self.conv_hidden_channels * self.attention_heads,
                                  self.conv_hidden_channels * self.attention_heads,
                                  heads=self.attention_heads, dropout=self.dropout_probability)
-        if self.number_conv_layers == 3:
             self.conv3 = GATConv(self.conv_hidden_channels * (self.attention_heads ** 2), self.dataset.num_classes,
-                                 dropout=self.dropout_probability)
-
+                                 concat=False)
 
     def forward(self, x, edge_index):
         x = f.elu(self.conv1(x, edge_index))
-        if self.number_conv_layers > 1:
+        x = f.dropout(x, p=self.dropout_probability, training=self.training)
+        if self.number_conv_layers == 2:
+            x = self.conv2(x, edge_index)
+            x = f.dropout(x, p=self.dropout_probability, training=self.training)
+        if self.number_conv_layers == 3:
             x = f.elu(self.conv2(x, edge_index))
-        if self.number_conv_layers > 2:
-            x = f.elu(self.conv3(x, edge_index))
+            x = f.dropout(x, p=self.dropout_probability, training=self.training)
+            x = self.conv3(x, edge_index)
 
         return f.log_softmax(x, dim=1)
 

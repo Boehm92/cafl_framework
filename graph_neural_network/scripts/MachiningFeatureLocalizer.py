@@ -12,7 +12,8 @@ class MachiningFeatureLocalizer:
         self.training_dataset = config.training_dataset
         self.network_model = config.network_model
         self.network_model_id = config.network_model_id
-        self.train_val_partition = config.train_val_partition
+        self.amount_training_data = config.amount_training_data
+        self.amount_validation_data = config.amount_validation_data
         self.trial = trial
         self.hyper_parameters = HyperParameter(trial, config.network_model_id)
         self.device = config.device
@@ -23,13 +24,15 @@ class MachiningFeatureLocalizer:
         _best_accuracy = 0
 
         self.training_dataset.shuffle()
-        _train_loader = DataLoader(self.training_dataset[:self.train_val_partition],
+        _train_loader = DataLoader(self.training_dataset[:self.amount_training_data],
                                    batch_size=self.hyper_parameters.batch_size, shuffle=True, drop_last=True)
-        _val_loader = DataLoader(self.training_dataset[self.train_val_partition: self.train_val_partition + 1000],
+        _val_loader = DataLoader(self.training_dataset[self.amount_training_data:
+                                                       self.amount_training_data + self.amount_validation_data],
                                  batch_size=self.hyper_parameters.batch_size, shuffle=True, drop_last=True)
 
         _network_model = self.network_model(self.training_dataset, self.device, self.hyper_parameters).to(self.device)
         print(_network_model)
+        print(self.device)
 
         # Configuring learning functions
         criterion = torch.nn.CrossEntropyLoss()
@@ -56,6 +59,11 @@ class MachiningFeatureLocalizer:
                 print("Saved model due to better found accuracy")
 
             if self.trial.should_prune():
+                wandb.run.summary["state"] = "pruned"
+                wandb.finish(quiet=True)
+                raise optuna.exceptions.TrialPruned()
+
+            if (train_f1 + 0.2) < val_f1:
                 wandb.run.summary["state"] = "pruned"
                 wandb.finish(quiet=True)
                 raise optuna.exceptions.TrialPruned()

@@ -13,7 +13,7 @@ class GcNetwork(torch.nn.Module):
         self.batch_size = hyper_parameter.batch_size
         self.dropout_probability = hyper_parameter.dropout_probability
         self.number_conv_layers = hyper_parameter.number_conv_layers
-        self.hidden_channels = hyper_parameter.hidden_channels
+        self.hidden_channels = hyper_parameter.conv_hidden_channels
 
         self.conv1 = GCNConv(self.dataset.num_features, self.hidden_channels)
         if self.number_conv_layers > 1:
@@ -36,7 +36,7 @@ class GcNetwork(torch.nn.Module):
     def forward(self, x, edge_index):
         x = self.conv1(x, edge_index)
         x = x.relu()
-        x = f.dropout(x, p=0.5, training=self.training)
+        x = f.dropout(x, p=self.dropout_probability, training=self.training)
         if self.number_conv_layers > 1:
             x = self.conv2(x, edge_index)
             x = x.relu()

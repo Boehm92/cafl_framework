@@ -11,20 +11,22 @@ def MLP(channels):
         for i in range(1, len(channels))
     ])
 
+
 class DgcnNetwork(torch.nn.Module):
     def __init__(self, dataset, device, hyper_parameter):
         super().__init__()
         self.device = device
-        self.aggr = 'add'
+        self.aggr = hyper_parameter.aggr
         self.number_conv_layers = hyper_parameter.number_conv_layers
         self.conv_hidden_channels = hyper_parameter.conv_hidden_channels
         self.mlp_hidden_channels = hyper_parameter.mlp_hidden_channels
+        self.dropout_probability = hyper_parameter.dropout_probability
 
-        self.conv1 = EdgeConv(MLP([2 * dataset.num_features, self.conv_hidden_channels, self.conv_hidden_channels]),
-                              self.aggr)
-        if self.number_conv_layers > 1:
-            self.conv2 = EdgeConv(MLP([int(2 * self.conv_hidden_channels), self.conv_hidden_channels,
-                                       self.conv_hidden_channels]), self.aggr)
+        self.conv1 = EdgeConv(
+            MLP([int(2 * dataset.num_features), self.conv_hidden_channels, self.conv_hidden_channels]),
+            self.aggr)
+        self.conv2 = EdgeConv(MLP([int(2 * self.conv_hidden_channels), self.conv_hidden_channels,
+                                   self.conv_hidden_channels]), self.aggr)
         if self.number_conv_layers > 2:
             self.conv3 = EdgeConv(MLP([int(2 * self.conv_hidden_channels), self.conv_hidden_channels,
                                        self.conv_hidden_channels]), self.aggr)
@@ -35,35 +37,46 @@ class DgcnNetwork(torch.nn.Module):
             self.conv5 = EdgeConv(MLP([int(2 * self.conv_hidden_channels), self.conv_hidden_channels,
                                        self.conv_hidden_channels]), self.aggr)
 
-        print(self.number_conv_layers * self.conv_hidden_channels)
-        print(self.mlp_hidden_channels)
-
-        self.lin1 = MLP([self.number_conv_layers * self.conv_hidden_channels, self.mlp_hidden_channels])
-        self.mlp = Seq(MLP([self.mlp_hidden_channels, int(self.mlp_hidden_channels / 4)]), Dropout(0.5),
-                       MLP([int(self.mlp_hidden_channels / 4), int(self.mlp_hidden_channels / 8)]), Dropout(0.5),
+        self.lin1 = MLP([int(self.number_conv_layers * self.conv_hidden_channels), self.mlp_hidden_channels])
+        self.mlp = Seq(MLP([self.mlp_hidden_channels, int(self.mlp_hidden_channels / 4)]),
+                       Dropout(self.dropout_probability),
+                       MLP([int(self.mlp_hidden_channels / 4), int(self.mlp_hidden_channels / 8)]),
+                       Dropout(self.dropout_probability),
                        Lin(int(self.mlp_hidden_channels / 8), dataset.num_classes))
 
     def forward(self, x, edge_index):
 
         x1 = self.conv1(x, edge_index)
-        out = self.lin1(torch.cat([x1], dim=1))
 
-        if self.number_conv_layers > 1:
+        if self.number_conv_layers > 2:
+            x2 = self.conv2(x1, edge_index)
+        elif self.number_conv_layers == 2:
             x2 = self.conv2(x1, edge_index)
             out = self.lin1(torch.cat([x1, x2], dim=1))
 
-        if self.number_conv_layers > 2:
+        if self.number_conv_layers > 3:
+            x3 = self.conv3(x2, edge_index)
+        elif self.number_conv_layers == 3:
             x3 = self.conv3(x2, edge_index)
             out = self.lin1(torch.cat([x1, x2, x3], dim=1))
 
-        if self.number_conv_layers > 3:
-            x4 = self.conv4(x2, edge_index)
+        if self.number_conv_layers > 4:
+            x4 = self.conv4(x3, edge_index)
+        elif self.number_conv_layers == 4:
+            x4 = self.conv3(x3, edge_index)
             out = self.lin1(torch.cat([x1, x2, x3, x4], dim=1))
 
-        if self.number_conv_layers > 4:
-            x5 = self.conv5(x2, edge_index)
+        if self.number_conv_layers == 5:
+            x5 = self.conv5(x4, edge_index)
             out = self.lin1(torch.cat([x1, x2, x3, x4, x5], dim=1))
 
+        out = self.mlp(out)
+        return f.log_softmax(out, dim=1)
+
+        x1 = self.conv1(x, edge_index)
+        x2 = self.conv2(x1, edge_index)
+        x3 = self.conv3(x2, edge_index)
+        out = self.lin1(torch.cat([x1, x2, x3], dim=1))
         out = self.mlp(out)
         return f.log_softmax(out, dim=1)
 

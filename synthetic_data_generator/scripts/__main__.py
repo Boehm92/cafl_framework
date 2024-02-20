@@ -10,7 +10,7 @@ _parser.add_argument('--target_directory',
                           'variables if you want to generate training or test data')
 
 _parser.add_argument('--max_machining_feature_dimension',
-                     dest='max_machining_feature_dimension', default=0.6, type=float,
+                     dest='max_machining_feature_dimension', default=0.5, type=float,
                      help='This value limits the length/with or radius of every machining feature in the'
                           'MachiningFeature class. The range of this value should be 0.1-1')
 
@@ -27,7 +27,7 @@ _parser.add_argument('--cad_data_generation_end_cycles',
                           'created.')
 
 _parser.add_argument('--max_machining_feature_count',
-                     dest='max_machining_feature_count', type=int, default=9,
+                     dest='max_machining_feature_count', type=int, default=8,
                      help='This value defines how many machining feature maximal can be applied to the base'
                           'primitive. The actual value will be randomly chosen from an interval from 1 to'
                           'the here defined value. For single feature creation this value should be 2, because the '
@@ -54,9 +54,7 @@ _parser.add_argument('--machining_feature_id',
                           'Should be true for single machining feature creation.')
 
 
-
 if __name__ == '__main__':
     _config = _parser.parse_args()
     _data_generator = DataGenerator(_config)
     _data_generator.generate()
-

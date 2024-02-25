@@ -1,4 +1,5 @@
 import os
+import time
 import torch
 import wandb
 import optuna
@@ -10,6 +11,7 @@ class MachiningFeatureLocalizer:
     def __init__(self, config, trial):
         self.max_epoch = config.max_epoch
         self.training_dataset = config.training_dataset
+        self.test_dataset = config.test_dataset
         self.network_model = config.network_model
         self.network_model_id = config.network_model_id
         self.amount_training_data = config.amount_training_data
@@ -76,3 +78,20 @@ class MachiningFeatureLocalizer:
         wandb.finish(quiet=True)
 
         return val_f1
+
+    def test(self):
+        _test_loader = DataLoader(self.test_dataset, batch_size=self.hyper_parameters.batch_size, shuffle=False,
+                                  drop_last=True)
+        _network_model = self.network_model(self.test_dataset, self.device, self.hyper_parameters).to(self.device)
+        _network_model.load_state_dict(torch.load(os.getenv('WEIGHTS') + '/weights.pt'),)
+        print("Graph neural network: ", _network_model)
+        start_time = time.time()
+        _test_f1, flops, params = _network_model.accuracy(_test_loader)
+        end_time = time.time()
+
+        total_time = end_time - start_time
+
+        print("F1-Score: ", _test_f1)
+        print("Runtime: ", total_time)
+        print("Average FLOPS: ", flops)
+        print("Average Parameters: ", params)

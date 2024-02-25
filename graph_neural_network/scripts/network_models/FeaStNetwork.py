@@ -1,4 +1,5 @@
 import torch
+from thop import profile
 import torch.nn.functional as f
 from torch_geometric.nn import FeaStConv as GraphConvLayer
 import torch.nn as nn
@@ -86,7 +87,8 @@ class FeaStNetwork(torch.nn.Module):
         all_predicted_labels = []
         all_true_labels = []
 
-        for data in loader:
+        for index, data in enumerate(loader):
+            print(index)
             out = self(data.x.to(self.device), data.edge_index.to(self.device))
             predicted_labels = out.argmax(dim=1).cpu().numpy()
             true_labels = data.y.cpu().numpy()
@@ -94,6 +96,9 @@ class FeaStNetwork(torch.nn.Module):
             all_predicted_labels.extend(predicted_labels)
             all_true_labels.extend(true_labels)
 
+            flops, params = profile(self, inputs=(data.x.to(self.device), data.edge_index.to(self.device),),
+                                    verbose=False)
+
         f1 = f1_score(all_true_labels, all_predicted_labels, average='micro')
 
-        return f1
+        return f1, flops, params

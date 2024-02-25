@@ -1,4 +1,6 @@
 import os
+from datetime import time
+
 import optuna
 import argparse
 import torch
@@ -16,6 +18,21 @@ from graph_neural_network.scripts.network_models.ArmaNetwork import ArmaNetwork
 from graph_neural_network.scripts.network_models.AgnNetwork import AgnNetwork
 
 _parser = argparse.ArgumentParser(description='Base configuration of the synthetic data generator')
+_parser.add_argument('--application_mode',
+                     dest='application_mode', default='test', type=str,
+                     help='The application modes has "trained" and "test". When set to trained the framework uses the'
+                          'TestModel class to train graph neural network. Please note, if you want to test different'
+                          'graph conv layer, the TestModel class must be configured with accordingly. For example,'
+                          'if you want to use the FeastNet layer please follow the guidelines from '
+                          'https://pytorch-geometric.readthedocs.io/en/latest/generated/torch_geometric.nn.conv - '
+                          '.FeaStConv.html#torch_geometric.nn.conv.FeaStConv, When set to test, the GraphConvModel is'
+                          'used. Here a weights file for a trained model is loaded. When you trained the model first,'
+                          'the weights file should be automatically be saved in the given path from the defined'
+                          'environment variable WEIGHTS, like described in the README file. Do to the fact, that the'
+                          'trained mode utilizes hyperparameter, the model architecture can vary with every program run'
+                          'Therefore, make sure that you configure the GraphConvModel accordingly. Also the training '
+                          'procedure uses a so called hyperparameter optimization. For more info about this '
+                          'optimization process, please visit: https://optuna.org/')
 _parser.add_argument('--project_name',
                      dest='project_name', default='CAFL', type=str,
                      help='This name belongs to the wandb project which is created when the code is started. The wandb '
@@ -24,12 +41,12 @@ _parser.add_argument('--project_name',
                           'https://docs.wandb.ai/quickstart.'
                           '(Not used for testing)')
 _parser.add_argument('--study_name',
-                     dest='study_name', default='DGCNN-max', type=str,
+                     dest='study_name', default='DGCNN-testi', type=str,
                      help='The study name defines a subgroup for the wandb project, which is defined above. This helps'
                           'to repeat an experiment or training process without creating every time a new wandb project.'
                           '(Not used for testing)')
 _parser.add_argument('--hyperparameter_trials',
-                     dest='hyperparameter_trials', default=100, type=int,
+                     dest='hyperparameter_trials', default=1, type=int,
                      help='The hyperparameter_trials value defines how often the training procedure is repeated.'
                           'Reason for repeated training is, that this framework applies a hyperparameter optimization '
                           'for the training procedure. Here, an optimization algorithm tries to find the best hyper '
@@ -47,15 +64,22 @@ _parser.add_argument('--training_dataset',
                           'conversion process takes some time, especially for larger data, but it has to be done only'
                           'once, as long as the data doesnt change. '
                           '(Not used for testing)')
+_parser.add_argument('--test_dataset',
+                     dest='test_dataset', default=DataImporter(os.getenv('TEST_DATASET_SOURCE'),
+                                                               os.getenv('TEST_DATASET_DESTINATION')).shuffle(),
+                     help='The test_dataset config holds the test data and follows the identical procedure as '
+                          'training_data. During the training, the test data is not needed, but the regarding directory'
+                          'should still hold at least one file, else the importer runs into an exception'
+                          '(Not used for testing)')
 _parser.add_argument('--amount_training_data',
-                     dest='amount_training_data', default=50707, type=int,
+                     dest='amount_training_data', default=45564, type=int,
                      help='This variable allows you to separate the training data, taken from the "data -> cad ->'
                           'training" folder, into training and validation datasets. For example, if you have 24000 '
                           'cad models, if you type in value 22000 models, then 22000 models will be utilized for '
                           'training and 2000 models for validation. NOTE: The cad models will be first converted into a'
                           'fitting graph representation and saved into the data -> graph -> training folder.')
 _parser.add_argument('--amount_validation_data',
-                     dest='amount_validation_data', default=8948, type=int,
+                     dest='amount_validation_data', default=11391, type=int,
                      help='')
 _parser.add_argument('--device',
                      dest='device', default=("cuda" if torch.cuda.is_available() else "cpu"), type=str,
@@ -81,8 +105,13 @@ _parser.add_argument('--network_model_id', dest='network_model_id', default="Dgc
                           'ArmaNetwork, AgnNetwork')
 
 if __name__ == '__main__':
-    _config = _parser.parse_args()
 
+    _config = _parser.parse_args()
     _study = optuna.create_study(direction="maximize", study_name=_config.study_name)
-    _study.optimize(lambda trial: MachiningFeatureLocalizer(_config, trial).training(),
-                    n_trials=_config.hyperparameter_trials)
+
+    if _config.application_mode == "training":
+        _study.optimize(lambda trial: MachiningFeatureLocalizer(_config, trial).training(),
+                        n_trials=_config.hyperparameter_trials)
+    elif _config.application_mode == "test":
+        _study.optimize(lambda trial: MachiningFeatureLocalizer(_config, trial).test(),
+                        n_trials=_config.hyperparameter_trials)

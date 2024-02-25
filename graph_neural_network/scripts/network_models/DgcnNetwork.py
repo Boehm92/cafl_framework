@@ -1,4 +1,6 @@
 import torch
+from thop import profile
+from statistics import mean
 import torch.nn.functional as f
 from torch_geometric.nn import EdgeConv
 from torch.nn import Sequential as Seq, Dropout, Linear as Lin, ReLU, BatchNorm1d as BN
@@ -112,15 +114,22 @@ class DgcnNetwork(torch.nn.Module):
         self.eval()
         all_predicted_labels = []
         all_true_labels = []
+        flops_list = []
+        params_list = []
 
-        for data in loader:
+        for index, data in enumerate(loader):
+            print(index)
             out = self(data.x.to(self.device), data.edge_index.to(self.device))
             predicted_labels = out.argmax(dim=1).cpu().numpy()
             true_labels = data.y.cpu().numpy()
-
             all_predicted_labels.extend(predicted_labels)
             all_true_labels.extend(true_labels)
 
+            flops, params = profile(self, inputs=(data.x.to(self.device), data.edge_index.to(self.device),),
+                                    verbose=False)
+            flops_list.append(flops)
+            params_list.append(params)
+
         f1 = f1_score(all_true_labels, all_predicted_labels, average='micro')
 
-        return f1
+        return f1, mean(flops_list), mean(params_list)

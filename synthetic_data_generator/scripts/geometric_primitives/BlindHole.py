@@ -10,22 +10,23 @@ class BlindHole:
         self.radius = np.random.uniform(0.5, (4.5 * self.limit))
         self.pos_x = np.random.uniform(self.radius + 0.5, 9.5 - self.radius)
         self.pos_y = np.random.uniform(self.radius + 0.5, 9.5 - self.radius)
-        self.start_point = -0.0002
+        self.positive_start_point = 10.0002
+        self.negative_start_point = -0.0002
         self.end_point = np.random.uniform(1, 9)
 
         self.transform = {
             "direction_1": [mdc.vec3(self.pos_x, self.pos_y, self.end_point),
-                            mdc.vec3(self.pos_x, self.pos_y, self.start_point)],
-            "direction_2": [mdc.vec3(self.pos_x, self.pos_y, self.start_point),
-                            mdc.vec3(self.pos_x, self.pos_y, self.end_point)],
-            "direction_3": [mdc.vec3(self.pos_x, self.start_point, self.pos_y),
+                            mdc.vec3(self.pos_x, self.pos_y, self.positive_start_point)],
+            "direction_2": [mdc.vec3(self.pos_x, self.pos_y, self.negative_start_point),
+                            mdc.vec3(self.pos_x, self.pos_y, self.negative_start_point)],
+            "direction_3": [mdc.vec3(self.pos_x, self.positive_start_point, self.pos_y),
                             mdc.vec3(self.pos_x, self.end_point, self.pos_y)],
             "direction_4": [mdc.vec3(self.pos_x, self.end_point, self.pos_y),
-                            mdc.vec3(self.pos_x, self.start_point, self.pos_y)],
-            "direction_5": [mdc.vec3(self.start_point, self.pos_x, self.pos_y),
+                            mdc.vec3(self.pos_x, self.negative_start_point, self.pos_y)],
+            "direction_5": [mdc.vec3(self.positive_start_point, self.pos_x, self.pos_y),
                             mdc.vec3(self.end_point, self.pos_x, self.pos_y)],
             "direction_6": [mdc.vec3(self.end_point, self.pos_x, self.pos_y),
-                            mdc.vec3(self.start_point, self.pos_x, self.pos_y)],
+                            mdc.vec3(self.negative_start_point, self.pos_x, self.pos_y)],
         }
 
     def transformation(self):

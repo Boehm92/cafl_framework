@@ -75,18 +75,12 @@ class DgcnNetwork(torch.nn.Module):
         out = self.mlp(out)
         return f.log_softmax(out, dim=1)
 
-        x1 = self.conv1(x, edge_index)
-        x2 = self.conv2(x1, edge_index)
-        x3 = self.conv3(x2, edge_index)
-        out = self.lin1(torch.cat([x1, x2, x3], dim=1))
-        out = self.mlp(out)
-        return f.log_softmax(out, dim=1)
-
     def train_loss(self, loader, criterion, optimizer):
         self.train()
 
         total_loss = 0
         for i, data in enumerate(loader):  # Iterate in batches over the training dataset.
+            print(i)
             data = data.to(self.device)
             optimizer.zero_grad()  # Clear gradients.
             out = self(data.x, data.edge_index)  # Perform a single forward pass.
@@ -118,7 +112,6 @@ class DgcnNetwork(torch.nn.Module):
         params_list = []
 
         for index, data in enumerate(loader):
-            print(index)
             out = self(data.x.to(self.device), data.edge_index.to(self.device))
             predicted_labels = out.argmax(dim=1).cpu().numpy()
             true_labels = data.y.cpu().numpy()

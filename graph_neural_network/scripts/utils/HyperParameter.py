@@ -1,9 +1,9 @@
 class HyperParameter:
     def __init__(self, trial, network_model):
         self.params = {
-            "batch_size": trial.suggest_categorical("batch_size", [32]),
-            "dropout_probability": trial.suggest_categorical("dropout_probability", [0.2]), #Feast: 0.5, Dropout: 0.1
-            "learning_rate": trial.suggest_categorical("learning_rate", [0.001]),
+            "batch_size": trial.suggest_categorical("batch_size", [32, 64, 128, 256]),
+            "dropout_probability": trial.suggest_categorical("dropout_probability", [0.1, 0.2, 0.3, 0.4, 0.5]),
+            "learning_rate": trial.suggest_categorical("learning_rate", [0.01, 0.001, 0.0001]),
         }
         if network_model == "GcNetwork":
             self.params.update({
@@ -12,23 +12,23 @@ class HyperParameter:
             })
         elif network_model == "DgcnNetwork":
             self.params.update({
-                "number_conv_layers": trial.suggest_categorical("number_conv_layers", [3]),
-                "conv_hidden_channels": trial.suggest_categorical("conv_hidden_channels", [128]),
-                "mlp_hidden_channels": trial.suggest_categorical("mlp_hidden_channels", [256]),
+                "number_conv_layers": trial.suggest_categorical("number_conv_layers", [2, 3, 4, 5]),
+                "conv_hidden_channels": trial.suggest_categorical("conv_hidden_channels", [32, 64, 128, 512]),
+                "mlp_hidden_channels": trial.suggest_categorical("mlp_hidden_channels", [32, 64, 128, 256]),
                 "aggr": "max",
             })
         elif network_model == "SageGnNetwork":
             self.params.update({
-                "number_conv_layers": trial.suggest_categorical("number_conv_layers", [4]),
-                "hidden_channels": trial.suggest_categorical("hidden_channels", [512]),
+                "number_conv_layers": trial.suggest_categorical("number_conv_layers", [1, 2, 3, 4, 5]),
+                "hidden_channels": trial.suggest_categorical("hidden_channels", [32, 64, 128, 256, 512]),
                 "aggr": trial.suggest_categorical("conv_hidden_channels", ["mean"]),
             })
         elif network_model == "FeaStNetwork":
             self.params.update({
-                "number_conv_layers": trial.suggest_categorical("conv_layer", [3]),
-                "conv_hidden_channels": trial.suggest_categorical("conv_hidden_channels", [32]),
-                "lin_hidden_channels": trial.suggest_categorical("lin_hidden_channels", [128]),
-                "attention_heads": trial.suggest_categorical("attention_heads", [10]),
+                "number_conv_layers": trial.suggest_categorical("conv_layer", [2, 3, 4]),
+                "conv_hidden_channels": trial.suggest_categorical("conv_hidden_channels", [4, 8, 16, 32, 64]),
+                "lin_hidden_channels": trial.suggest_categorical("lin_hidden_channels", [64, 128, 256, 512]),
+                "attention_heads": trial.suggest_categorical("attention_heads", [6, 8, 10, 11, 12]),
             })
         elif network_model == "GATNetwork":
             self.params.update({

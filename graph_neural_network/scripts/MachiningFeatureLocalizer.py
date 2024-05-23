@@ -5,6 +5,10 @@ import wandb
 import optuna
 from torch_geometric.loader import DataLoader
 from graph_neural_network.scripts.utils.HyperParameter import HyperParameter
+import networkx as nx
+from networkx.algorithms import community
+from torch_geometric.utils import to_networkx
+from graph_neural_network.scripts.utils.visualize import GraphVisualization
 
 
 class MachiningFeatureLocalizer:
@@ -49,8 +53,9 @@ class MachiningFeatureLocalizer:
         for epoch in range(1, self.max_epoch):
             training_loss = _network_model.train_loss(_train_loader, criterion, optimizer)
             val_loss = _network_model.val_loss(_val_loader, criterion)
-            train_f1 = _network_model.accuracy(_train_loader)
-            val_f1 = _network_model.accuracy(_val_loader)
+            train_f1, flops, params = _network_model.accuracy(_train_loader)
+            val_f1, flops, params = _network_model.accuracy(_val_loader)
+            print(val_f1, flops, params)
             self.trial.report(val_f1, epoch)
 
             wandb.log({'training_loss': training_loss, 'val_los': val_loss, 'train_F1': train_f1, 'val_F1': val_f1})
@@ -80,8 +85,9 @@ class MachiningFeatureLocalizer:
         return val_f1
 
     def test(self):
-        _test_loader = DataLoader(self.test_dataset, batch_size=self.hyper_parameters.batch_size, shuffle=False,
+        _test_loader = DataLoader(self.test_dataset[:10], batch_size=self.hyper_parameters.batch_size, shuffle=False,
                                   drop_last=True)
+
         _network_model = self.network_model(self.test_dataset, self.device, self.hyper_parameters).to(self.device)
         _network_model.load_state_dict(torch.load(os.getenv('WEIGHTS') + '/weights.pt'),)
         print("Graph neural network: ", _network_model)

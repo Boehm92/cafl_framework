@@ -18,6 +18,7 @@ class DataGenerator:
         self.rotate_base_primitive = config.rotate_base_primitive
         self.select_machining_feature_id_random = config.select_machining_feature_id_random
         self.machining_feature_id = config.machining_feature_id
+        np.random.seed(config.random_generation_seed)
 
     def generate(self):
         for _model_id in range(self.cad_data_generation_start_cycle, self.cad_data_generation_end_cycles):

@@ -19,7 +19,7 @@ from graph_neural_network.scripts.network_models.AgnNetwork import AgnNetwork
 
 _parser = argparse.ArgumentParser(description='Base configuration of the synthetic data generator')
 _parser.add_argument('--application_mode',
-                     dest='application_mode', default='test', type=str,
+                     dest='application_mode', default='trained', type=str,
                      help='The application modes has "trained" and "test". When set to trained the framework uses the'
                           'TestModel class to train graph neural network. Please note, if you want to test different'
                           'graph conv layer, the TestModel class must be configured with accordingly. For example,'
@@ -41,12 +41,12 @@ _parser.add_argument('--project_name',
                           'https://docs.wandb.ai/quickstart.'
                           '(Not used for testing)')
 _parser.add_argument('--study_name',
-                     dest='study_name', default='DGCNN-testi', type=str,
+                     dest='study_name', default='DGCNN', type=str,
                      help='The study name defines a subgroup for the wandb project, which is defined above. This helps'
                           'to repeat an experiment or training process without creating every time a new wandb project.'
                           '(Not used for testing)')
 _parser.add_argument('--hyperparameter_trials',
-                     dest='hyperparameter_trials', default=1, type=int,
+                     dest='hyperparameter_trials', default=100, type=int,
                      help='The hyperparameter_trials value defines how often the training procedure is repeated.'
                           'Reason for repeated training is, that this framework applies a hyperparameter optimization '
                           'for the training procedure. Here, an optimization algorithm tries to find the best hyper '
@@ -54,8 +54,7 @@ _parser.add_argument('--hyperparameter_trials',
                           'parameter, the training procedure has to be conducted multiple times, so the optimization '
                           'algorithms can analyze how different values of each parameter influences the training '
                           'procedure of the network. More information about hyperparameter optimization at:'
-                          'https://optuna.org/'
-                     )
+                          'https://optuna.org/')
 _parser.add_argument('--training_dataset',
                      dest='training_dataset', default=DataImporter(os.getenv('TRAINING_DATASET_SOURCE'),
                                                                    os.getenv('TRAINING_DATASET_DESTINATION')).shuffle(),
@@ -105,7 +104,6 @@ _parser.add_argument('--network_model_id', dest='network_model_id', default="Dgc
                           'ArmaNetwork, AgnNetwork')
 
 if __name__ == '__main__':
-
     _config = _parser.parse_args()
     _study = optuna.create_study(direction="maximize", study_name=_config.study_name)
 
